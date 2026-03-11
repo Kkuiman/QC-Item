@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QC RSD Calculator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background: #fff;
+      color: #111;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 560px;
+    }
+
+    h1 {
+      font-size: 14px;
+      font-weight: bold;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-bottom: 2px solid #111;
+      padding-bottom: 10px;
+      margin-bottom: 28px;
+    }
+
+    /* ── Section ── */
+    .section {
+      margin-bottom: 24px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 12px;
+    }
+
+    /* ── Input Grid ── */
+    .input-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px 16px;
+    }
+
+    .input-grid.two-col {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: 400px) {
+      .input-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .field label {
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      color: #555;
+    }
+
+    .field input {
+      border: none;
+      border-bottom: 1px solid #111;
+      outline: none;
+      font-family: inherit;
+      font-size: 16px; /* 16px prevents iOS auto-zoom */
+      color: #111;
+      background: transparent;
+      padding: 8px 0;
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .field input::placeholder {
+      color: #ccc;
+    }
+
+    .field input:focus {
+      border-bottom-width: 2px;
+    }
+
+    .field .err {
+      font-size: 10px;
+      color: #c00;
+      min-height: 14px;
+    }
+
+    /* ── Buttons ── */
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 14px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border: 1px solid #111;
+      background: #fff;
+      color: #111;
+      padding: 14px 0;
+      cursor: pointer;
+      flex: 1;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    .btn:active { background: #e0e0e0; }
+
+    .btn.primary {
+      background: #111;
+      color: #fff;
+      flex: 2;
+    }
+
+    .btn.primary:active { background: #444; }
+
+    /* ── Results ── */
+    .results {
+      display: none;
+    }
+
+    .results.visible {
+      display: block;
+    }
+
+    .results-label {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead tr {
+      border-bottom: 2px solid #111;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 6px 6px;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: normal;
+      color: #555;
+    }
+
+    thead th:last-child { text-align: right; }
+    thead th:nth-child(2),
+    thead th:nth-child(3),
+    thead th:nth-child(4) { text-align: right; }
+
+    tbody tr {
+      border-bottom: 1px solid #ddd;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+
+    tbody td {
+      padding: 12px 6px;
+      font-size: 13px;
+    }
+
+    tbody td:nth-child(2),
+    tbody td:nth-child(3),
+    tbody td:nth-child(4) { text-align: right; }
+
+    .tag {
+      font-size: 12px;
+      font-weight: bold;
+      letter-spacing: 0.04em;
+    }
+
+    .pass { color: #1a7a3a; }
+    .fail { color: #c00; }
+    .dash { color: #aaa; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>QC RSD Calculator</h1>
+
+    <!-- STD Inputs -->
+    <div class="section">
+      <div class="section-label">STD (Standard) — required</div>
+      <div class="input-grid" id="std-grid">
+        <div class="field">
+          <label>STD 1</label>
+          <input type="number" id="std1" placeholder="0.000" step="any" />
+          <span class="err" id="err-std1"></span>
+        </div>
+        <div class="field">
+          <label>STD 2</label>
+          <input type="number" id="std2" placeholder="0.000" step="any" />
+          <span class="err" id="err-std2"></span>
+        </div>
+        <div class="field">
+          <label>STD 3</label>
+          <input type="number" id="std3" placeholder="0.000" step="any" />
+          <span class="err" id="err-std3"></span>
+        </div>
+        <div class="field">
+          <label>STD 4</label>
+          <input type="number" id="std4" placeholder="0.000" step="any" />
+          <span class="err" id="err-std4"></span>
+        </div>
+        <div class="field">
+          <label>STD 5</label>
+          <input type="number" id="std5" placeholder="0.000" step="any" />
+          <span class="err" id="err-std5"></span>
+        </div>
+        <div class="field">
+          <label>STD 6</label>
+          <input type="number" id="std6" placeholder="0.000" step="any" />
+          <span class="err" id="err-std6"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BRK Inputs -->
+    <div class="section">
+      <div class="section-label">BRK (Bracket) — optional</div>
+      <div class="input-grid two-col">
+        <div class="field">
+          <label>BRK 1</label>
+          <input type="number" id="brk1" placeholder="0.000" step="any" />
+          <span class="err"></span>
+        </div>
+        <div class="field">
+          <label>BRK 2</label>
+          <input type="number" id="brk2" placeholder="0.000" step="any" />
+          <span class="err"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions">
+      <button class="btn primary" onclick="calculate()">Calculate</button>
+      <button class="btn" onclick="clearAll()">Clear</button>
+    </div>
+
+    <!-- Results -->
+    <div class="results" id="results">
+      <div class="results-label">Results</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Group</th>
+            <th>N</th>
+            <th>Mean</th>
+            <th>RSD%</th>
+            <th style="text-align:right">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>STD 1–6</td>
+            <td id="r-std-n">—</td>
+            <td id="r-std-mean">—</td>
+            <td id="r-std-rsd">—</td>
+            <td style="text-align:right"><span class="tag" id="r-std-status"></span></td>
+          </tr>
+          <tr>
+            <td>STD + BRK</td>
+            <td id="r-brk-n">—</td>
+            <td id="r-brk-mean">—</td>
+            <td id="r-brk-rsd">—</td>
+            <td style="text-align:right"><span class="tag" id="r-brk-status"></span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const stdIds = ['std1','std2','std3','std4','std5','std6'];
+    const brkIds = ['brk1','brk2'];
+
+    function getVal(id) {
+      const v = document.getElementById(id).value.trim();
+      return v === '' ? null : parseFloat(v);
+    }
+
+    function mean(arr) {
+      return arr.reduce((a, b) => a + b, 0) / arr.length;
+    }
+
+    function sampleSD(arr) {
+      const m = mean(arr);
+      const variance = arr.reduce((s, v) => s + (v - m) ** 2, 0) / (arr.length - 1);
+      return Math.sqrt(variance);
+    }
+
+    function rsd(arr) {
+      const m = mean(arr);
+      if (m === 0) return null;
+      return (sampleSD(arr) / m) * 100;
+    }
+
+    function setErr(id, msg) {
+      const el = document.getElementById('err-' + id);
+      if (el) el.textContent = msg;
+    }
+
+    function clearErr() {
+      stdIds.forEach(id => setErr(id, ''));
+    }
+
+    function renderRow(nId, meanId, rsdId, statusId, values, hasBrk) {
+      if (values === null) {
+        document.getElementById(nId).textContent = '—';
+        document.getElementById(meanId).textContent = '—';
+        document.getElementById(rsdId).textContent = '—';
+        const s = document.getElementById(statusId);
+        s.textContent = '—';
+        s.className = 'tag dash';
+        return;
+      }
+      const m = mean(values);
+      const r = values.length >= 2 ? rsd(values) : null;
+
+      document.getElementById(nId).textContent = values.length;
+      document.getElementById(meanId).textContent = m.toFixed(4);
+
+      if (r === null) {
+        document.getElementById(rsdId).textContent = '—';
+        const s = document.getElementById(statusId);
+        s.textContent = '—';
+        s.className = 'tag dash';
+      } else {
+        document.getElementById(rsdId).textContent = r.toFixed(3) + '%';
+        const s = document.getElementById(statusId);
+        if (r <= 2.0) {
+          s.textContent = 'PASS';
+          s.className = 'tag pass';
+        } else {
+          s.textContent = 'FAIL';
+          s.className = 'tag fail';
+        }
+      }
+    }
+
+    function calculate() {
+      clearErr();
+
+      // Validate STD
+      let stdValues = [];
+      let hasError = false;
+
+      stdIds.forEach(id => {
+        const v = getVal(id);
+        if (v === null) {
+          setErr(id, 'required');
+          hasError = true;
+        } else if (isNaN(v)) {
+          setErr(id, 'invalid');
+          hasError = true;
+        } else {
+          stdValues.push(v);
+        }
+      });
+
+      if (hasError) return;
+
+      // BRK values (optional)
+      let brkValues = [];
+      brkIds.forEach(id => {
+        const v = getVal(id);
+        if (v !== null && !isNaN(v)) brkValues.push(v);
+      });
+
+      // Combined
+      const combined = brkValues.length > 0 ? [...stdValues, ...brkValues] : null;
+
+      // Render
+      renderRow('r-std-n', 'r-std-mean', 'r-std-rsd', 'r-std-status', stdValues, false);
+      renderRow('r-brk-n', 'r-brk-mean', 'r-brk-rsd', 'r-brk-status', combined, brkValues.length > 0);
+
+      document.getElementById('results').classList.add('visible');
+    }
+
+    function clearAll() {
+      [...stdIds, ...brkIds].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      clearErr();
+      document.getElementById('results').classList.remove('visible');
+      // reset table cells
+      ['r-std-n','r-std-mean','r-std-rsd','r-brk-n','r-brk-mean','r-brk-rsd'].forEach(id => {
+        document.getElementById(id).textContent = '—';
+      });
+      ['r-std-status','r-brk-status'].forEach(id => {
+        const el = document.getElementById(id);
+        el.textContent = '';
+        el.className = 'tag';
+      });
+    }
+
+    // Enter key triggers calculate
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter') calculate();
+    });
+  </script>
+</body>
+</html>
