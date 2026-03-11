@@ -371,15 +371,14 @@
     function calculate() {
       clearErr();
 
-      // Validate STD
+      // Collect STD values (optional per field, min 2 required)
       let stdValues = [];
       let hasError = false;
 
       stdIds.forEach(id => {
         const v = getVal(id);
         if (v === null) {
-          setErr(id, 'required');
-          hasError = true;
+          // empty is ok
         } else if (isNaN(v)) {
           setErr(id, 'invalid');
           hasError = true;
@@ -389,6 +388,13 @@
       });
 
       if (hasError) return;
+
+      if (stdValues.length < 2) {
+        stdIds.forEach(id => {
+          if (getVal(id) === null) setErr(id, 'min 2 required');
+        });
+        return;
+      }
 
       // BRK values (optional)
       let brkValues = [];
